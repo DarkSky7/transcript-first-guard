@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transcript-First & Live Chat Guard</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body {
+      width: 300px;
+      margin: 0;
+      padding: 14px;
+      font-family: "Roboto", Arial, sans-serif;
+      font-size: 13px;
+      color: #111;
+      background: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1f1f1f; color: #eee; }
+    }
+    h1 { font-size: 14px; margin: 0 0 12px; }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-top: 1px solid rgba(128,128,128,0.25);
+    }
+    .row:first-of-type { border-top: none; }
+    .lbl b { display: block; }
+    .lbl span { opacity: 0.65; font-size: 11.5px; }
+    .hint { margin-top: 10px; opacity: 0.55; font-size: 11.5px; }
+    /* Toggle switch */
+    .switch { position: relative; width: 40px; height: 24px; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #888; border-radius: 24px; transition: 0.2s;
+    }
+    .slider::before {
+      content: ""; position: absolute; height: 18px; width: 18px;
+      left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s;
+    }
+    input:checked + .slider { background: #3ea6ff; }
+    input:checked + .slider::before { transform: translateX(16px); }
+  </style>
+</head>
+<body>
+  <h1>Transcript-First & Live Chat Guard</h1>
+
+  <div class="row">
+    <div class="lbl">
+      <b>Open transcript when available</b>
+      <span>Auto-opens the transcript on watch pages that have one.</span>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="openTranscript" />
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="row">
+    <div class="lbl">
+      <b>Close live chat by default</b>
+      <span>Collapses the live-chat pane on live/broadcast pages.</span>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="closeLiveChat" />
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="hint">
+    The floating buttons on each watch page let you re-open the live chat (and
+    close the transcript) for the current and subsequent pages in this tab.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+/* Floating control for Transcript-First & Live Chat Guard */
+#tf-gate-root {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147483647;
+  font-family: "Roboto", "YouTube Noto", Arial, sans-serif;
+}
+#tf-gate-root .tf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(15, 15, 15, 0.92);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+#tf-gate-root button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+#tf-gate-root button:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+#tf-gate-root button:active {
+  transform: scale(0.97);
+}
+#tf-gate-root button.active {
+  background: #3ea6ff;
+  color: #0f0f0f;
+}

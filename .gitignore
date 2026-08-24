@@ -1,0 +1,12 @@
+# Python test artifacts
+__pycache__/
+*.pyc
+
+# OS junk
+Thumbs.db
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp

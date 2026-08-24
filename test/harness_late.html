@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Extension test harness (late-mount transcript)</title>
+</head>
+<body>
+  <!-- Mimics a YouTube watch page where the transcript button mounts LATE
+       (as on a real reload — the description area renders after the player).
+       The chat frame is present immediately. -->
+  <ytd-live-chat-frame id="chat">LIVE CHAT FRAME</ytd-live-chat-frame>
+  <!-- The player, so the readiness gate has something to see. -->
+  <div id="movie_player"><video></video></div>
+
+  <script>
+    // ── Stub the chrome extension API ──────────────────────────────────────
+    window.chrome = {
+      storage: {
+        sync: {
+          _store: { openTranscript: true, closeLiveChat: true },
+          _listeners: [],
+          get(defaults, cb) { cb(Object.assign({}, defaults, this._store)); },
+          set(patch, cb) {
+            Object.assign(this._store, patch);
+            const changes = {};
+            for (const k in patch) changes[k] = { newValue: patch[k] };
+            this._listeners.forEach(fn => fn(changes, "sync"));
+            if (cb) cb();
+          }
+        },
+        onChanged: {
+          addListener(fn) { chrome.storage.sync._listeners.push(fn); }
+        }
+      }
+    };
+  </script>
+
+  <!-- Load the extension content script -->
+  <script src="../content.js"></script>
+
+  <script>
+    // Mount the transcript affordance LATE — well AFTER content.js's first pass
+    // (which happens ~800ms after DOMContentLoaded), so the observer must
+    // recover it, not the retry timer. Reproduces a slow reload on a real page.
+    setTimeout(() => {
+      const btn = document.createElement("button");
+      btn.id = "mock-tx-btn";
+      btn.setAttribute("aria-label", "Show transcript");
+      btn.textContent = "Show transcript";
+      btn.addEventListener("click", function () {
+        const panel = document.querySelector('ytd-engagement-panel-section-list-renderer');
+        const open = this.getAttribute("aria-label").toLowerCase().includes("show");
+        if (open) {
+          panel.removeAttribute("hidden");
+          this.setAttribute("aria-label", "Hide transcript");
+          this.textContent = "Hide transcript";
+        } else {
+          panel.setAttribute("hidden", "");
+          this.setAttribute("aria-label", "Show transcript");
+          this.textContent = "Show transcript";
+        }
+      });
+      document.body.appendChild(btn);
+      const panel = document.createElement("ytd-engagement-panel-section-list-renderer");
+      panel.setAttribute("target-id", "engagement-panel-searchable-transcript");
+      panel.setAttribute("hidden", "");
+      panel.textContent = "TRANSCRIPT PANEL";
+      document.body.appendChild(panel);
+      window.__lateMounted = true;
+    }, 6000);
+
+    // ── Test probes (exposed for the CDP driver) ──────────────────────────
+    window.__probe = function () {
+      const panel = document.querySelector('ytd-engagement-panel-section-list-renderer');
+      const chat = document.querySelector('ytd-live-chat-frame');
+      return {
+        lateMounted: !!window.__lateMounted,
+        transcriptHidden: panel ? panel.hasAttribute('hidden') : null,
+        transcriptDisplay: panel ? getComputedStyle(panel).display : null,
+        chatDisplay: chat ? getComputedStyle(chat).display : null,
+        floatMounted: !!document.querySelector('#tf-open-chat'),
+        sessionTx: sessionStorage.getItem("tfg.transcriptClosed"),
+      };
+    };
+  </script>
+</body>
+</html>
