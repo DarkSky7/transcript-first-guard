@@ -32,7 +32,7 @@ Firefox hides debug-level logs by default. Use `console.log` — and mirror your
 `about:debugging` shows the manifest version. If the manifest version and the in-script `VERSION` const diverge, you cannot tell whether the user is running the build you think they are. Bump both, every time.
 
 ## 10. Zen (Firefox fork) has its own hard-refresh video bug
-Ctrl+Shift+R on a YouTube watch page breaks playback ("Playback isn't supported on this device") — **with all extensions removed**. F5 recovers. It's a browser codec/EME renegotiation bug, not yours. Report draft included in this repo (`zen-bug-report.md`) — and it's the first thing to check when a user reports "your extension broke YouTube."
+Ctrl+Shift+R on a YouTube watch page breaks playback ("Playback isn't supported on this device") — **with all extensions removed**. F5 recovers. It's a browser codec/EME renegotiation bug, not yours. Report draft included in this repo (`zen-bug-report.md`) — and it's the first thing to check when a user reports "your extension broke YouTube." Filed upstream: zen-browser/desktop#15090 (verified NOT reproducible in Firefox).
 
 ---
 

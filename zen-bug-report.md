@@ -27,6 +27,8 @@ The player enters an error state after a no-cache reload and refuses to play unt
 - May be related to the broader DRM/streaming issues class (see discussion #1831).
 - DevTools on the affected page warns: *"connected browser is more recent (154.0, buildID 20260818) than your Zen (1.21.15b)… may cause DevTools to fail"* — probably only relevant to debugging, but noted for completeness.
 - **Workaround:** a normal reload (F5/Ctrl+R) restores playback.
+- **Firefox check (2026-08-24):** NOT reproducible in Mozilla Firefox on Windows 11 — hard refresh plays normally. Bug is Zen-specific.
+- **Filed upstream:** zen-browser/desktop#15090
 
 ## Evidence timeline
 - Hard refresh → "Playback isn't supported" (extensions removed) → next hard refresh recovers.
