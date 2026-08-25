@@ -12,7 +12,7 @@ What happened vs what you expected.
 **Browser & version**
 - Browser: (Firefox / Zen / Chrome / Edge / Brave / other)
 - Browser version:
-- Extension version: (see `about:addons` / `chrome://extensions` — must read **1.1.20**)
+- Extension version: (see `about:addons` / `chrome://extensions` — must read **1.1.21**)
 
 **Video URL**
 The YouTube watch page where it happens.
