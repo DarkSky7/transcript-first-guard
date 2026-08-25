@@ -1,7 +1,7 @@
 # AMO public submission kit — "Transcript-First & Live Chat Guard" v1.1.19
 
 Package: `F:\Documents\GitHub\transcript-first-guard\youtube-transcript-guard.zip`
-MD5: `c6a4a848c0da2eb09f1d5bd30a86c3e1` (byte-identical xpi also in repo)
+MD5: `dece0bc2205e972cffcd9dfb79fe0ed2` (byte-identical xpi also in repo)
 Extension ID: `transcript-first-guard@landis.cc` (already in manifest)
 
 ## Decisions (locked 2026-08-24)
