@@ -2,6 +2,8 @@
 
 A browser extension for YouTube (Firefox / Zen / Chrome / Edge / Brave), MV3.
 
+**Source & issues:** [github.com/DarkSky7/transcript-first-guard](https://github.com/DarkSky7/transcript-first-guard) — bug reports welcome; forks encouraged.
+
 **What it does, by default, on every watch page you open:**
 
 - **Opens the video's transcript** — automatically, for any video that has one.

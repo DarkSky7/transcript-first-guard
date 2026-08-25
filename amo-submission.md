@@ -37,7 +37,7 @@ On YouTube watch pages this extension:
 **Privacy policy (required for public listing):**
 This extension collects no data. It does not use analytics, tracking, or remote code. All settings (the transcript/chat preferences) are stored locally in your browser's extension storage and never transmitted anywhere. The extension only reads and interacts with YouTube watch pages.
 
-**Homepage / support:** https://planetwatch.cc/downloads
+**Homepage / support:** https://github.com/DarkSky7/transcript-first-guard (issues welcome) · fleet downloads: https://planetwatch.cc/downloads
 
 **Version notes (1.1.19):**
 First public release. Auto-opens the transcript once the page settles; collapses live chat by default; one-click re-enable/close controls; session memory; compatible with Firefox, Zen, and Chromium-based browsers.
