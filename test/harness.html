@@ -10,6 +10,12 @@
   <ytd-engagement-panel-section-list-renderer
      target-id="engagement-panel-searchable-transcript"
      hidden>TRANSCRIPT PANEL</ytd-engagement-panel-section-list-renderer>
+  <!-- NEW two-surface layout (2026-08-28): inline description-section transcript,
+       independent of the slide-out engagement panel above. -->
+  <ytd-video-description-transcript-section-renderer id="mock-inline-sec">
+    <button id="mock-inline-btn" aria-label="Show transcript">Show transcript</button>
+    <ytd-transcript-renderer id="mock-inline-body" hidden>INLINE TRANSCRIPT BODY</ytd-transcript-renderer>
+  </ytd-video-description-transcript-section-renderer>
   <ytd-live-chat-frame id="chat">LIVE CHAT FRAME</ytd-live-chat-frame>
   <!-- The player, so the readiness gate (auto-open only when the player has
        mounted its video element) has something to see. -->
@@ -28,6 +34,22 @@
         this.textContent = "Hide transcript";
       } else {
         panel.setAttribute("hidden", "");
+        this.setAttribute("aria-label", "Show transcript");
+        this.textContent = "Show transcript";
+      }
+    });
+    // The INLINE surface is an independent toggle: clicking its button flips
+    // the inline body only — the engagement panel is NOT affected. This is
+    // what a two-surface YouTube layout actually does.
+    document.getElementById("mock-inline-btn").addEventListener("click", function () {
+      const body = document.getElementById("mock-inline-body");
+      const open = this.getAttribute("aria-label").toLowerCase().includes("show");
+      if (open) {
+        body.removeAttribute("hidden");
+        this.setAttribute("aria-label", "Hide transcript");
+        this.textContent = "Hide transcript";
+      } else {
+        body.setAttribute("hidden", "");
         this.setAttribute("aria-label", "Show transcript");
         this.textContent = "Show transcript";
       }
@@ -68,13 +90,19 @@
       const chat = document.querySelector('ytd-live-chat-frame');
       const floatBtn = document.querySelector('#tf-open-chat');
       const closeTxBtn = document.querySelector('#tf-close-tx');
+      const inlineBody = document.getElementById('mock-inline-body');
+      const inlineBtn = document.getElementById('mock-inline-btn');
       return {
         transcriptHidden: panel ? panel.hasAttribute('hidden') : null,
         transcriptDisplay: panel ? getComputedStyle(panel).display : null,
+        inlineHidden: inlineBody ? inlineBody.hasAttribute('hidden') : null,
+        inlineDisplay: inlineBody ? getComputedStyle(inlineBody).display : null,
+        inlineBtnLabel: inlineBtn ? inlineBtn.getAttribute('aria-label') : null,
         chatDisplay: chat ? getComputedStyle(chat).display : null,
         floatMounted: !!floatBtn,
         floatBtnText: floatBtn ? floatBtn.textContent : null,
         closeTxMounted: !!closeTxBtn,
+        closeTxText: closeTxBtn ? closeTxBtn.textContent : null,
         sessionChat: sessionStorage.getItem("tfg.liveChatUnlocked"),
         sessionTx: sessionStorage.getItem("tfg.transcriptClosed"),
       };
@@ -85,6 +113,14 @@
     };
     window.__clickCloseTx = function () {
       document.querySelector('#tf-close-tx').click();
+    };
+    // Two-surface repro: open the INLINE transcript only (the way the real
+    // YouTube layout does), then let the extension's close path try to close.
+    window.__openInlineOnly = function () {
+      document.getElementById('mock-inline-btn').click();
+    };
+    window.__openPanelOnly = function () {
+      document.getElementById('mock-tx-btn').click();
     };
   </script>
 </body>

@@ -16,7 +16,7 @@
   if (window.__transcriptFirstLoaded) return;
   window.__transcriptFirstLoaded = true;
 
-  const VERSION = "1.1.21";
+  const VERSION = "1.1.22";
   const STORE = { sync: chrome.storage && chrome.storage.sync };
   const FLUID_ID = "tf-gate-root";
 
@@ -139,6 +139,16 @@
   const TX_SHOW_RE = /show transcript/i;
   const TX_HIDE_RE = /hide transcript/i;
   const PANEL_SEL = 'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]';
+  // NEW inline description-section transcript surface (2026-08-28 two-surface
+  // fix): modern YouTube can render the transcript inline in the description
+  // section AND/OR in the old slide-out engagement panel. State checks must
+  // see BOTH, or the extension opens one while blind to the other (the
+  // duplicate-transcript bug). Body = the transcript content element that only
+  // exists/renders when the inline surface is actually open.
+  const INLINE_SEL = "ytd-video-description-transcript-section-renderer";
+  const INLINE_BODY_SEL = INLINE_SEL + " ytd-transcript-renderer, " +
+                          INLINE_SEL + " #description-transcript, " +
+                          INLINE_SEL + " ytd-transcript-segment-list-renderer";
 
   let deepTx = null; // per-applyPolicy memo: { show, hide, panel }
   let lastDeepWalk = 0;
@@ -210,6 +220,20 @@
     return lightFind(TX_HIDE_RE) || deepFindTx().hide;
   }
 
+  // ALL hide toggles across BOTH surfaces (2026-08-28): the inline
+  // description-section button and the engagement-panel affordance are
+  // separate elements on two-surface layouts; closing must hit every one.
+  function allTranscriptHideBtns() {
+    const found = [];
+    const push = (b) => { if (b && !found.includes(b)) found.push(b); };
+    qa(INLINE_SEL + " button").forEach((b) => { if (TX_HIDE_RE.test(b.getAttribute("aria-label") || "")) push(b); });
+    qa("button, tp-yt-paper-button, [aria-label*='ranscript']").forEach((b) => {
+      if (TX_HIDE_RE.test(b.getAttribute("aria-label") || "")) push(b);
+    });
+    push(deepFindTx().hide);
+    return found;
+  }
+
   function transcriptEnabled() {
     // True if a transcript affordance exists (a captioned video shows the
     // "Show transcript" button). Fall back to the panel being present.
@@ -217,17 +241,36 @@
   }
 
   function isTranscriptOpen() {
-    // What the user actually sees: the panel is open iff it is VISIBLE on
-    // screen. YouTube hides a fresh, not-yet-opened panel via stylesheet
-    // rules (the `hidden` attribute is often absent in Zen), and our own
-    // user-close sets inline display:none — computed style captures all of
-    // it. The button label is advisory only (it can lag the panel).
+    // What the user actually sees: the transcript is open iff ANY transcript
+    // surface is VISIBLE on screen. TWO surfaces exist (2026-08-28 fix):
+    //   (a) the old slide-out engagement panel (PANEL_SEL), and
+    //   (b) the NEW inline description-section transcript (INLINE_BODY_SEL).
+    // The old check only measured (a) — on layouts with both, the inline copy
+    // was invisible to the state machine, so the extension opened the panel
+    // copy too (duplicate transcript) and could never see the inline one
+    // close. YouTube hides a not-yet-opened panel via stylesheet rules (the
+    // `hidden` attribute is often absent in Zen), and our own user-close sets
+    // inline display:none — computed style captures all of it. The button
+    // label is advisory only (it can lag the panel).
+    const visible = (el) => {
+      try {
+        const cs = getComputedStyle(el);
+        return cs.display !== "none" && cs.visibility !== "hidden";
+      } catch (_) { return false; }
+    };
     const panel = q(PANEL_SEL) || deepFindTx().panel;
-    if (!panel) return false;
-    try {
-      const cs = getComputedStyle(panel);
-      return cs.display !== "none" && cs.visibility !== "hidden";
-    } catch (_) { return false; }
+    if (panel && visible(panel)) return true;
+    // Inline description-section transcript: prefer its content body (only
+    // present when open); fall back to the section renderer itself being
+    // visible with a "Hide transcript" toggle (label = authoritative state).
+    const body = q(INLINE_BODY_SEL);
+    if (body && visible(body)) return true;
+    const inlineSec = q(INLINE_SEL);
+    if (inlineSec && visible(inlineSec)) {
+      const b = inlineSec.querySelector("button");
+      if (b && TX_HIDE_RE.test(b.getAttribute("aria-label") || "")) return true;
+    }
+    return false;
   }
 
   // We set this whenever closeTranscript forces the panel closed (inline
@@ -274,25 +317,57 @@
       panel.removeAttribute("hidden");
       panel.style.removeProperty("display");
     }
+    // Clear any forced close we applied to the inline description-section
+    // body at close time (two-surface fix) — YouTube's own toggle can then
+    // make it visible again.
+    const inlineSec = q(INLINE_SEL);
+    if (inlineSec) {
+      const body = inlineSec.querySelector("ytd-transcript-renderer, #description-transcript, ytd-transcript-segment-list-renderer");
+      if (body && body.style && body.style.display) body.style.removeProperty("display");
+    }
   }
 
   function closeTranscript() {
-    // Close via YouTube's OWN toggle when available (keeps its label in sync).
+    // Close via YouTube's OWN toggles when available (keeps its labels in
+    // sync) — hit EVERY hide toggle across BOTH surfaces (inline description
+    // section + slide-out engagement panel; 2026-08-28 two-surface fix).
     // THEN force the visual close: YouTube's author CSS overrides the UA
     // `[hidden]` rule on custom elements, so the `hidden` attribute alone is
     // unreliable (seen in Zen — panel stayed visible). The forced inline
     // display:none is the same guaranteed mechanism the live-chat collapse
     // uses, and works even when YouTube's label is desynced.
     if (!isTranscriptOpen()) return; // already closed — never click (would OPEN)
-    const hideBtn = transcriptHideBtn();
-    if (hideBtn) {
-      try { hideBtn.click(); } catch (_) {}
-    }
+    const hideBtns = allTranscriptHideBtns();
+    hideBtns.forEach((b) => { try { b.click(); } catch (_) {} });
     const panel = q(PANEL_SEL) || deepFindTx().panel;
     if (panel) {
+      // Only claim ownership when we force-hide a panel that was ACTUALLY
+      // visible — on a two-surface layout the inline transcript may be the
+      // open one while the panel never was; claiming weClosed would make the
+      // next open strip the panel's artifacts and pop it open unprompted.
+      let panelWasVisible = false;
+      try {
+        const cs = getComputedStyle(panel);
+        panelWasVisible = cs.display !== "none" && cs.visibility !== "hidden";
+      } catch (_) {}
       panel.setAttribute("hidden", "");
       panel.style.setProperty("display", "none", "important");
-      weClosed = true; // reopen may now strip these artifacts
+      if (panelWasVisible) weClosed = true; // reopen may now strip these artifacts
+    }
+    // Force-close the inline description-section transcript too (two-surface
+    // fix): YouTube renders it as a separate surface from the engagement
+    // panel, and a hide-click on the panel's toggle does not close it.
+    const inlineSec = q(INLINE_SEL);
+    if (inlineSec) {
+      const body = inlineSec.querySelector("ytd-transcript-renderer, #description-transcript, ytd-transcript-segment-list-renderer");
+      if (body) body.style.setProperty("display", "none", "important");
+      const btn = inlineSec.querySelector("button");
+      if (btn && TX_HIDE_RE.test(btn.getAttribute("aria-label") || "")) {
+        // If we closed the inline body directly, sync YouTube's own label so
+        // it does not think the transcript is still open.
+        btn.setAttribute("aria-label", "Show transcript");
+        btn.textContent = "Show transcript";
+      }
     }
   }
 

@@ -40,6 +40,18 @@ with sync_playwright() as p:
     page.evaluate("window.__clickReenable()"); page.wait_for_timeout(300)
     after_relock_chat = probe()
 
+    # ── TWO-SURFACE REPRO (2026-08-28 fix): with ONLY the inline transcript
+    #    open (the modern YouTube layout), the float button must (a) recognize
+    #    it as open — OLD code only measured the engagement panel and saw
+    #    "closed", opening the panel too (the duplicate bug) — and (b) close
+    #    it. Sequence: close everything first, then open the inline ONLY.
+    page.evaluate("window.__clickCloseTx()"); page.wait_for_timeout(300)  # ensure all closed
+    page.evaluate("window.__openInlineOnly()"); page.wait_for_timeout(300)
+    inline_only = probe()   # expect: inlineHidden=false, panel hidden, btn=Hide
+    # Float button must now close the inline copy in one click.
+    page.evaluate("window.__clickCloseTx()"); page.wait_for_timeout(600)
+    after_close_inline = probe()  # expect: inlineHidden=true, panel hidden
+
     # Simulate a "subsequently opened watch page" in the same tab: sessionStorage
     # persists across SPA navigations, so the user's overrides must carry over.
     page.evaluate("history.pushState({}, '', '/watch.html?sec=2')")
@@ -54,6 +66,8 @@ with sync_playwright() as p:
     print("AFTER_CLOSE_TX:", json.dumps(after_close))
     print("AFTER_REOPEN_TX:", json.dumps(after_reopen_tx))
     print("AFTER_RELOCK_CHAT:", json.dumps(after_relock_chat))
+    print("INLINE_ONLY:", json.dumps(inline_only))
+    print("AFTER_CLOSE_INLINE:", json.dumps(after_close_inline))
     print("AFTER_SUBSEQUENT_NAV:", json.dumps(after_nav))
     print("PAGE_ERRORS:", errs if errs else "none")
     browser.close()

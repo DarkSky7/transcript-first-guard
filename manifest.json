@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Transcript-First & Live Chat Guard",
-  "version": "1.1.21",
+  "version": "1.1.22",
   "description": "On YouTube watch pages: opens the transcript when one exists, and closes the live chat pane by default. Includes a floating control to re-enable the live chat and to close the transcript — applied to the current page and to subsequently opened pages.",
   "browser_specific_settings": {
     "gecko": {
