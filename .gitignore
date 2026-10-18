@@ -11,3 +11,7 @@ Thumbs.db
 .vscode/
 *.swp
 discord-paste.txt
+
+# Derived build output: the Chromium/Brave 'Load unpacked' tree is regenerated
+# by build_release.py from the repo files; never commit the copy.
+dist/chrome-*/
