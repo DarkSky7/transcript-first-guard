@@ -9,7 +9,9 @@ name in archive"). Fixed timestamp => deterministic bytes.
 Usage: uv run python build_release.py   (from repo root)
 """
 import hashlib
+import json
 import os
+import shutil
 import zipfile
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -54,3 +56,35 @@ b = md5("transcript-first-guard.xpi")
 print("zip :", a)
 print("xpi :", b)
 print("identical:", a == b)
+
+
+def build_unpacked(dest: str) -> None:
+    """Chromium/Brave 'Load unpacked' tree.
+
+    An archive cannot be loaded by Chromium — `brave://extensions` ->
+    Developer mode -> Load unpacked needs a DIRECTORY whose root holds
+    manifest.json. Same entries as the archive, but the Firefox-only
+    top-level keys (browser_specific_settings, gecko_android) are dropped:
+    Chromium ignores them and flags them as unrecognised manifest keys on
+    the extension card, which reads like a defect.
+    """
+    if os.path.isdir(dest):
+        shutil.rmtree(dest)
+    for name in ENTRIES:
+        out = os.path.join(dest, name.replace("/", os.sep))
+        os.makedirs(os.path.dirname(out) or dest, exist_ok=True)
+        shutil.copyfile(name, out)
+    with open("manifest.json", "r", encoding="utf-8") as f:
+        m = json.load(f)
+    for k in ("browser_specific_settings", "gecko_android"):
+        m.pop(k, None)
+    with open(os.path.join(dest, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(m, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    n = sum(len(files) for _, _, files in os.walk(dest))
+    print(f"unpacked -> {dest}  ({n} files, manifest {m['version']})")
+
+
+with open("manifest.json", "r", encoding="utf-8") as f:
+    _ver = json.load(f)["version"]
+build_unpacked(os.path.join("dist", f"chrome-{_ver}"))
