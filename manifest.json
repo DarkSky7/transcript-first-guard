@@ -1,21 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Transcript-First & Live Chat Guard",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "description": "On YouTube watch pages: opens the transcript when one exists, and closes the live chat pane by default. Includes a floating control to re-enable the live chat and to close the transcript — applied to the current page and to subsequently opened pages.",
   "browser_specific_settings": {
     "gecko": {
       "id": "transcript-first-guard@landis.cc",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     },
     "gecko_android": {
       "strict_min_version": "142.0"
     }
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "*://*.youtube.com/*"
   ],
@@ -24,8 +28,12 @@
       "matches": [
         "*://*.youtube.com/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],

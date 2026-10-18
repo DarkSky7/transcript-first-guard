@@ -403,11 +403,27 @@
     if (document.getElementById(FLUID_ID)) return;
     const host = document.createElement("div");
     host.id = FLUID_ID;
-    host.innerHTML = `
-      <div class="tf-card">
-        <button id="tf-open-chat" title="Toggle live chat on this page (affects current and subsequent pages this session)">🡹 Live Chat</button>
-        <button id="tf-close-tx" title="Toggle transcript — close or re-open (current + subsequent pages this session)">✕ Transcript</button>
-      </div>`;
+    /* Built node by node rather than as a markup string. AMO's validator flags assigning a
+     * template literal (even one with no substitutions) to this property as an unsafe
+     * assignment, and it is right in principle: the value is parsed as HTML, so it is only
+     * safe as long as nobody ever interpolates into it. createElement + textContent cannot
+     * be parsed as markup at all. */
+    const card = document.createElement("div");
+    card.className = "tf-card";
+
+    const chatBtn = document.createElement("button");
+    chatBtn.id = "tf-open-chat";
+    chatBtn.title = "Toggle live chat on this page (affects current and subsequent pages this session)";
+    chatBtn.textContent = "🡹 Live Chat";
+
+    const txBtn = document.createElement("button");
+    txBtn.id = "tf-close-tx";
+    txBtn.title = "Toggle transcript — close or re-open (current + subsequent pages this session)";
+    txBtn.textContent = "✕ Transcript";
+
+    card.appendChild(chatBtn);
+    card.appendChild(txBtn);
+    host.appendChild(card);
     (document.body || document.documentElement).appendChild(host);
 
     host.querySelector("#tf-open-chat").addEventListener("click", () => {
