@@ -56,3 +56,44 @@ First public release. Auto-opens the transcript once the page settles; collapses
 - [x] Route: web UI, unlisted channel
 - [ ] Screenshots (2–3): float buttons on a watch page; transcript open + chat collapsed — generate if wanted
 - [ ] Upload, note the signed-xpi URL, host it in GitHub Releases + fleet pages
+
+## CI signing (`.github/workflows/sign-release.yml`)
+
+Signing used to be a manual trip through the Developer Hub: upload the xpi, wait,
+download the signed copy by hand. Unlisted add-ons are **auto-approved**, so a
+runner can do the whole thing unattended.
+
+The one thing that makes this non-obvious: signed files for **unlisted** add-ons
+are not publicly fetchable — a request without credentials returns 401. That is
+why automation needs API keys and why a web-UI-only account cannot do it.
+
+### One-time setup
+
+1. <https://addons.mozilla.org/en-US/developers/addon/api/key/> → **Generate new
+   credentials**. You get a **JWT issuer** and a **JWT secret**. Free; no paid tier.
+   One key pair per add-on, never shared between add-ons.
+2. Repo → **Settings → Secrets and variables → Actions** → add two repository
+   secrets: `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`.
+3. Run it: **Actions → "Sign (AMO unlisted)" → Run workflow**, or push a `v*` tag.
+
+### What the workflow does
+
+- Builds the artifact with `build_release.py` (deterministic bytes, forward-slash
+  entry names).
+- **Unpacks that xpi into `stage/` and signs the staged tree.** It does not glob
+  the repo, so what AMO signs is exactly the reviewed build — no stray file can
+  join the package.
+- Fails with a plain message if the version already exists on AMO (AMO rejects
+  duplicate versions).
+- Asserts `META-INF/mozilla.rsa`, `mozilla.sf` and `manifest.mf` are present.
+- Asserts the signed file list is identical to the unsigned one.
+- Uploads the signed xpi as a workflow artifact (90 days) and, on a tag push,
+  attaches it to that GitHub Release.
+
+### Notes
+
+- `listed` would enter human review; only `unlisted` completes unattended.
+- The keys are repo secrets: never commit them, never paste them in chat, and
+  rotate by regenerating in the Developer Hub and updating both secrets.
+- web-ext is pinned to major 8 in the workflow.
+
