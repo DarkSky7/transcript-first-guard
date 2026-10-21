@@ -119,6 +119,48 @@ jobs:
           fi
           echo "Contents match: $(wc -l < signed-files.txt) files"
 
+      - name: Commit the signed XPI back into the repo
+        # THIS is what closes the loop. Until now the workflow signed the package and
+        # attached it to a Release, which meant the repo carried only a reproducible
+        # UNSIGNED build - so "the repo has the extension" and "the repo has the signed
+        # extension people actually install" were different facts.
+        #
+        # After this step the repo is the distribution surface: signed/ holds the exact
+        # AMO-signed bytes for that version plus a .sha256, and a -latest copy so a
+        # download URL never needs to know the version. Anyone can verify the payload
+        # against AMO's signature without an API call or a trip through the Add-ons Hub.
+        #
+        # Only on a tag push: a dispatch run has no version to file the artifact under,
+        # and committing on an arbitrary branch would scatter duplicates.
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          XPI=$(ls dist/signed/*.xpi | head -1)
+          test -n "$XPI"
+          mkdir -p signed
+          TARGET="signed/transcript-first-guard-${VERSION}.xpi"
+          cp "$XPI" "$TARGET"
+          ( cd signed && sha256sum "$(basename "$TARGET")" > "$(basename "$TARGET").sha256" )
+          cp "$XPI" signed/transcript-first-guard-latest.xpi
+          ( cd signed && sha256sum transcript-first-guard-latest.xpi > transcript-first-guard-latest.xpi.sha256 )
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add signed/
+          if git diff --cached --quiet; then
+            echo "signed artifact already committed for $VERSION - nothing to do"
+            exit 0
+          fi
+          git commit -m "sign: AMO-signed transcript-first-guard ${VERSION}
+
+          Signed through the AMO API on tag ${GITHUB_REF_NAME}. Payload is byte-for-byte
+          the reviewed build output; contents verified against the unsigned artifact
+          before this commit was made."
+          # A tag push leaves HEAD detached, so state the destination explicitly.
+          git push origin "HEAD:${DEFAULT_BRANCH}"
+
       - uses: actions/upload-artifact@v4
         with:
           name: signed-xpi-${{ env.VERSION }}
