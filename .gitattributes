@@ -1,0 +1,3 @@
+# Checksum files must round-trip byte-exactly: CRLF translation appends a \r to
+# the trailing filename field and makes `sha256sum -c` fail on a Windows checkout.
+*.sha256 -text
