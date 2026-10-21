@@ -1,3 +1,7 @@
 # Checksum files must round-trip byte-exactly: CRLF translation appends a \r to
 # the trailing filename field and makes `sha256sum -c` fail on a Windows checkout.
 *.sha256 -text
+# Shell/python helpers must keep LF in the working tree: a CRLF checkout makes
+# bash choke on the shebang and on `set -euo pipefail`.
+*.sh text eol=lf
+*.py text eol=lf
