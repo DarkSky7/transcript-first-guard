@@ -90,9 +90,51 @@ why automation needs API keys and why a web-UI-only account cannot do it.
 - Uploads the signed xpi as a workflow artifact (90 days) and, on a tag push,
   attaches it to that GitHub Release.
 
+### Where the key pair lives, and why CI is not signing yet (2026-10-21)
+
+The add-on's API key pair exists and is proven live. It is stored **on the MSI
+workstation only**, at `~/.ssh/amo-transcript-first-guard.env` (mode 600,
+`AMO_JWT_ISSUER` / `AMO_JWT_SECRET` = KEY lines) — one pair for this add-on, never
+reused by another extension.
+
+It is **not** in the repo's Actions secrets, so `sign-release.yml` still fails at
+its first step ("Fail fast if AMO credentials are missing"). That is a permissions
+wall, not a missing key: pasting a repo secret needs `Secrets: write`, and **every
+credential on this host returns 403** on `repos/DarkSky7/transcript-first-guard/
+actions/secrets` (all four profile `GH_TOKEN`s, the `gh` keyring identity, and the
+per-repo `_PAT` files). Only the repo owner can paste them, once, in the web UI:
+
+1. <https://github.com/DarkSky7/transcript-first-guard/settings/secrets/actions>
+2. New repository secret → `AMO_JWT_ISSUER` → value of that key in the file above
+3. New repository secret → `AMO_JWT_SECRET` → the 64-char value
+
+After that, push a `v*` tag and CI signs, verifies and commits `signed/` by itself.
+
+**v1.1.24 was signed by the fallback path instead.** `scripts/sign-locally.sh`
+performs the same steps as the workflow (build → stage the unpacked tree → `web-ext
+sign --channel unlisted` → META-INF + content-parity checks → write `signed/`), so
+the repo carries the same artifact either way. Proof recorded for 1.1.24: AMO
+version `1.1.24` (file `5147742`) reports
+`sha256:7547b921d9a6498a42e99168ab9d32689a66ba3cefb25a20d86cdf6e412c3a49`, which is
+exactly what `signed/transcript-first-guard-1.1.24.xpi.sha256` contains.
+
+Useful modes:
+
+```
+scripts/sign-locally.sh --check    # prove the key pair authenticates (no upload)
+scripts/sign-locally.sh --stage    # sign, verify, but don't touch signed/
+scripts/sign-locally.sh            # sign and write signed/ (commit it yourself)
+```
+
+Once the secrets are in place the workflow is the preferred path again; the script
+stays as the fallback for when Actions permissions, secrets or the AMO API are
+unavailable.
+
 ### Notes
 
 - `listed` would enter human review; only `unlisted` completes unattended.
+- AMO refuses a version number that already exists, so a version signed locally
+  must not be signed again through CI — bump `manifest.json` instead.
 - The keys are repo secrets: never commit them, never paste them in chat, and
   rotate by regenerating in the Developer Hub and updating both secrets.
 - web-ext is pinned to major 8 in the workflow.

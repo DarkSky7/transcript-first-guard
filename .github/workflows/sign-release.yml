@@ -59,6 +59,10 @@ jobs:
           if [ "$missing" = "1" ]; then
             echo "Generate a key pair at https://addons.mozilla.org/en-US/developers/addon/api/key/"
             echo "then add both values under Settings -> Secrets and variables -> Actions."
+            echo "Only the repo owner can paste them: that needs Secrets: write, which no"
+            echo "agent or automation credential on the fleet holds (all return 403 here)."
+            echo "Until then sign from the workstation: scripts/sign-locally.sh, then"
+            echo "commit signed/ - see amo-submission.md, Where the key pair lives."
             exit 1
           fi
 
