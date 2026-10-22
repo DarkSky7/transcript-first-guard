@@ -24,18 +24,35 @@ extension's popup (the puzzle icon → *Transcript-First & Live Chat Guard*).
 
 ## Install
 
-**Firefox / Zen:** install from [addons.mozilla.org](https://addons.mozilla.org)
-(search *Transcript-First & Live Chat Guard*).
+**Pick your browser first — that is the only choice that matters.** The built
+tree is laid out that way, with a per-browser README at
+[`dist/README.md`](dist/README.md):
 
-**Chromium (Chrome/Edge/Brave/Opera) — load unpacked:**
+```
+dist/
+  firefox/<version>.xpi     ← about:addons → Install Add-on From File…
+  chromium/<version>/       ← chrome://extensions → Developer mode → Load unpacked
+  README.md
+```
 
-1. Download and unzip this folder (keep the folder intact).
-2. Open `chrome://extensions` (or `edge://extensions`) in your browser.
-3. Turn on **Developer mode** (top-right).
-4. Click **Load unpacked** and select the unzipped **folder** (the one
-   containing `manifest.json`).
-5. The extension activates automatically. Open any YouTube watch page to see it
-   work.
+**Firefox / Zen:** `about:addons` → gear icon → **Install Add-on From File…** →
+`dist/firefox/<version>.xpi`. (Also listed on
+[addons.mozilla.org](https://addons.mozilla.org) — search *Transcript-First &
+Live Chat Guard*.)
+
+**Chromium (Chrome/Edge/Brave/Opera):**
+
+1. `chrome://extensions` (or `brave://extensions`, `edge://extensions`).
+2. Turn on **Developer mode** (top-right).
+3. **Load unpacked** → select the `dist/chromium/<version>` **folder** (the one
+   containing `manifest.json`), not a file.
+4. The extension activates automatically. Open any YouTube watch page.
+
+> Do not cross the artifacts over: a `.xpi` in Chromium gives *"Manifest file is
+> missing or unreadable"*, and an unpacked folder cannot be installed in Firefox.
+
+Regenerate the tree any time with `build_release.py`. `dist/` is derived and
+gitignored; `signed/` holds the committed, immutable signing audit trail.
 
 > No accounts, no data collection, no network activity beyond YouTube itself.
 > It only arranges elements that are already on the page.

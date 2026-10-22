@@ -87,4 +87,93 @@ def build_unpacked(dest: str) -> None:
 
 with open("manifest.json", "r", encoding="utf-8") as f:
     _ver = json.load(f)["version"]
-build_unpacked(os.path.join("dist", f"chrome-{_ver}"))
+
+# ---------------------------------------------------------------------------
+# Human-facing release layout. The point of this tree is that you pick your
+# BROWSER first and never have to know what "signed" or "dist" mean:
+#
+#   dist/
+#     README.md              <- which file for which browser
+#     firefox/1.1.26.xpi     <- about:addons -> Install Add-on From File
+#     chromium/1.1.26/       <- brave://extensions -> Load unpacked
+#
+# Everything under dist/ is derived, so it is gitignored; regenerate any time.
+# The CI audit trail still lives in signed/ (committed, immutable, written by
+# the signing workflow) and the workflow's own build output stays at the repo
+# root — those are internals, not things a user should have to reason about.
+# ---------------------------------------------------------------------------
+DIST = "dist"
+FF = os.path.join(DIST, "firefox")
+CR = os.path.join(DIST, "chromium")
+
+# Anything not in the documented layout is stale: old per-version unpacked
+# dirs, and artifacts dumped at the dist/ root by earlier build scripts.
+for entry in os.listdir(DIST) if os.path.isdir(DIST) else []:
+    path = os.path.join(DIST, entry)
+    stale_dir = entry.startswith("chrome-") and os.path.isdir(path)
+    stale_file = entry.startswith("transcript-first-guard-") and entry.endswith((".xpi", ".zip"))
+    if stale_dir:
+        shutil.rmtree(path)
+    elif stale_file:
+        os.remove(path)
+
+build_unpacked(os.path.join(CR, _ver))
+
+signed_src = os.path.join("signed", f"transcript-first-guard-{_ver}.xpi")
+os.makedirs(FF, exist_ok=True)
+ff_dest = os.path.join(FF, f"{_ver}.xpi")
+if os.path.isfile(signed_src):
+    shutil.copyfile(signed_src, ff_dest)
+    ff_note = f"signed (AMO unlisted), copied from signed/transcript-first-guard-{_ver}.xpi"
+else:
+    shutil.copyfile("transcript-first-guard.xpi", ff_dest)
+    ff_note = "UNSIGNED build - Firefox/Zen will refuse it; push a v* tag to sign"
+
+readme = f"""# Which file do I install?
+
+Pick the **browser** you are installing into. Nothing else matters.
+
+## Firefox / Zen / other Firefox forks
+
+**File:** `firefox/{_ver}.xpi`
+
+1. `about:addons`
+2. Gear icon (top right) -> **Install Add-on From File...**
+3. Choose `dist/firefox/{_ver}.xpi`
+
+Status: {ff_note}
+
+On Firefox 127+ host permissions are granted by the install prompt. If the
+extension ends up with no site access anyway (sideloaded, or revoked), open the
+extension's popup and use its **Enable on YouTube** button.
+
+## Chromium: Chrome / Edge / Brave / Opera
+
+**Folder:** `chromium/{_ver}/`
+
+1. `chrome://extensions` (or `brave://extensions`, `edge://extensions`)
+2. Turn on **Developer mode**
+3. **Load unpacked** -> select the `chromium/{_ver}` **folder** (not a file)
+
+Unpacked means unsigned, so Chromium will nag "Disable developer mode
+extensions" at startup. Expected. Declared host permissions are granted on load.
+
+## Do not cross them over
+
+- `.xpi` into Chromium -> "Manifest file is missing or unreadable" (an XPI is a
+  signed Mozilla package).
+- An unpacked folder into Firefox -> not installable (there is no file to pick).
+
+## Where these came from
+
+| Path | What it is | Who writes it |
+|---|---|---|
+| `dist/` | this tree - derived, gitignored | `build_release.py` |
+| `signed/` | signed XPIs + sha256, committed audit trail | signing workflow (tag push) |
+| `transcript-first-guard.xpi` / `.zip` | unsigned reproducible build (byte-identical pair) | `build_release.py` |
+"""
+with open(os.path.join(DIST, "README.md"), "w", encoding="utf-8", newline="\n") as f:
+    f.write(readme)
+print(f"release tree -> {DIST}/ (firefox/{_ver}.xpi, chromium/{_ver}/, README.md)")
+print(f"  firefox artifact: {ff_note}")
+
