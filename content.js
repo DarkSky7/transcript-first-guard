@@ -16,7 +16,7 @@
   if (window.__transcriptFirstLoaded) return;
   window.__transcriptFirstLoaded = true;
 
-  const VERSION = "1.1.22";
+  const VERSION = "1.1.26";
   const STORE = { sync: chrome.storage && chrome.storage.sync };
   const FLUID_ID = "tf-gate-root";
 
